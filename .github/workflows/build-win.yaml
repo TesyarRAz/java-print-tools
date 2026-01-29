@@ -1,32 +1,38 @@
 name: Build Windows EXE
 
-on: [push]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
       - name: Setup GraalVM
         uses: graalvm/setup-graalvm@v1
         with:
-          distribution: 'graalvm'
           java-version: '21'
-          components: 'native-image'
+          distribution: 'graalvm'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # 'native-image' sudah termasuk di GraalVM JDK modern,
+          # tapi tidak masalah jika ingin eksplisit.
 
-      - name: Build native exe
+      - name: Build with Native Image
+        shell: cmd
         run: |
+          mkdir out
           javac -d out src/main/java/*.java
-          native-image ^
-            --no-fallback ^
-            -H:Name=image-printer ^
-            -cp out ^
-            ImagePrinter
+          native-image --no-fallback -H:Name=image-printer -cp out ImagePrinter
 
       - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
-          name: image-printer-win
+          name: image-printer-windows
           path: image-printer.exe
+          if-no-files-found: error
