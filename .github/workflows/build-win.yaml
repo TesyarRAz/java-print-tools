@@ -1,0 +1,32 @@
+name: Build Windows EXE
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          distribution: 'graalvm'
+          java-version: '21'
+          components: 'native-image'
+
+      - name: Build native exe
+        run: |
+          javac -d out src/main/java/*.java
+          native-image ^
+            --no-fallback ^
+            -H:Name=image-printer ^
+            -cp out ^
+            ImagePrinter
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: image-printer-win
+          path: image-printer.exe
